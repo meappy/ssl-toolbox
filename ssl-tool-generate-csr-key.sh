@@ -15,12 +15,12 @@ CERT_DATA=$(openssl s_client -servername "${CN}" \
 # Let's try to build the  [ dn ] info
 DN=$(echo -e "${CERT_DATA}" | grep "Subject:" \
     | perl -pe 's/^\s+Subject:\s//' \
-    | perl -pe 's/\, /\n\1/g')
+    | perl -pe 's/\, ([A-Z]{1,2}=)/\n\1/g')
     
 # [ alt_names ] info
 ARRAY=( $(echo -e "${CERT_DATA}" \
     | grep "DNS:" \
-    | perl -pe 's/^ +DNS://g' \
+    | perl -pe 's/^\s+DNS://g' \
     | perl -pe 's/, DNS:/\n/g') )
 
 FN="$(echo ${CN} | perl -pe 's/\./_/g')"
