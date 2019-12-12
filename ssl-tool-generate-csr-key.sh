@@ -48,7 +48,7 @@ echo "**** Now verify, then copy and paste the following to generate .csr and .k
 echo "*********************************************************************************"
 echo
 
-echo -en "
+echo -e "
 openssl req -new -sha256 -nodes -out ${FN}.csr -newkey rsa:2048 -keyout ${FN}.key -config <(
 cat <<-EOF
 [req]
