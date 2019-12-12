@@ -18,7 +18,7 @@ DN=$(
        echo -e "${CERT_DATA}" \
          | grep 'Subject:' \
          | perl -pe 's/^\s+Subject:\s//' \
-         | perl -pe 's/\, ([A-Z]{1,2}=)/\n\1/g' \
+         | perl -pe 's/\, ([A-Z]{1,2}\s?=)/\n\1/g' \
    )
     
 # [ alt_names ] info
