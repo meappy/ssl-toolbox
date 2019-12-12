@@ -1,29 +1,40 @@
 #!/usr/bin/env bash
 
 # 2018-03-01
-# v1
+# v2.1
 # Gerald S.
 
 CN="${1}"
 
-# Capture the required information
+# Get the certificate info in plaintext format
 CERT_DATA=$(openssl s_client -servername "${CN}" \
               -connect "${CN}":443  2>&1 < /dev/null \
-                | openssl x509 -noout -text)
-
+                | openssl x509 -noout -text \
+          )
 
 # Let's try to build the  [ dn ] info
-DN=$(echo -e "${CERT_DATA}" | grep "Subject:" \
-    | perl -pe 's/^\s+Subject:\s//' \
-    | perl -pe 's/\, ([A-Z]{1,2}=)/\n\1/g')
+DN=$(echo -e "${CERT_DATA}" \
+       | grep 'Subject:' \
+       | perl -pe 's/^\s+Subject:\s//' \
+       | perl -pe 's/\, ([A-Z]{1,2}=)/\n\1/g' \
+   )
     
 # [ alt_names ] info
 ARRAY=( $(echo -e "${CERT_DATA}" \
-    | grep "DNS:" \
-    | perl -pe 's/^\s+DNS://g' \
-    | perl -pe 's/, DNS:/\n/g') )
+            | grep 'DNS:' \
+            | perl -pe 's/^\s+DNS://g' \
+            | perl -pe 's/, DNS:/\n/g' \
+         )
+       )
 
+# File name standard (example.com -> example_com)
 FN="$(echo ${CN} | perl -pe 's/\./_/g')"
+
+# Parse the data for [ alt_names ]
+for ((i = 0; i < ${#ARRAY[@]}; ++i));
+    do NUM=$(( $i + 1 ))
+    ALT_NAMES+="DNS.$NUM = ${ARRAY[$i]}\n"
+done
 
 echo
 echo
@@ -37,7 +48,7 @@ echo "**** Now verify, then copy and paste the following to generate .csr and .k
 echo "*********************************************************************************"
 echo
 
-echo -n "
+echo -en "
 openssl req -new -sha256 -nodes -out ${FN}.csr -newkey rsa:2048 -keyout ${FN}.key -config <(
 cat <<-EOF
 [req]
@@ -54,11 +65,6 @@ ${DN}
 subjectAltName = @alt_names
 
 [ alt_names ]
-"
-for ((i = 0; i < ${#ARRAY[@]}; ++i)); 
-    do NUM=$(( $i + 1 ))
-    echo "DNS.$NUM = ${ARRAY[$i]}"
-done
-echo "
+${ALT_NAMES}
 EOF
 )"
