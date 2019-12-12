@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # 2018-03-01
 # v1
@@ -6,24 +6,24 @@
 
 CN="${1}"
 
+# Capture the required information
+CERT_DATA=$(openssl s_client -servername "${CN}" \
+              -connect "${CN}":443  2>&1 < /dev/null \
+                | openssl x509 -noout -text)
+
+
 # Let's try to build the  [ dn ] info
-openssl s_client -servername "${CN}" -connect "${CN}":443  2>&1 < /dev/null | \
-    openssl x509 -noout -text | grep Subject: | perl -pe 's/^.*(C=.*)/$1/g' | \
-    perl -pe 's/^ +Subject: //g' | \
-    perl -pe 's/(.=|..=)/\n$1/g' | perl -pe 's/^ //g' | \
-    perl -pe 's/, ?$//g' | \
-    perl -pe 's/^\n//g' > /tmp/$$_1
+DN=$(echo -e "${CERT_DATA}" | grep "Subject:" \
+    | perl -pe 's/^\s+Subject:\s//' \
+    | perl -pe 's/\, /\n\1/g')
     
 # [ alt_names ] info
-openssl s_client -servername "${CN}" -connect "${CN}":443  2>&1 < /dev/null | \
-    openssl x509 -noout -text | grep DNS: | \
-    perl -pe 's/^ +DNS://g' | perl -pe 's/, DNS:/\n/g' > /tmp/$$_2
+ARRAY=( $(echo -e "${CERT_DATA}" \
+    | grep "DNS:" \
+    | perl -pe 's/^ +DNS://g' \
+    | perl -pe 's/, DNS:/\n/g') )
 
-DN="$(cat /tmp/$$_1)"
 FN="$(echo ${CN} | perl -pe 's/\./_/g')"
-ARRAY=($(cat /tmp/$$_2))
-
-#ALT_NAMES= "$(for ((i = 0; i < ${#ARRAY[@]}; ++i)); do NUM=$(( $i + 1 )); echo DNS.$NUM = ${ARRAY[$i]}; done)"
 
 echo
 echo
