@@ -7,28 +7,31 @@
 CN="${1}"
 
 # Get the certificate info in plaintext format
-CERT_DATA=$(openssl s_client -servername "${CN}" \
-              -connect "${CN}":443  2>&1 < /dev/null \
-                | openssl x509 -noout -text \
+CERT_DATA=$(
+              openssl s_client -servername "${CN}" \
+                -connect "${CN}":443  2>&1 < /dev/null \
+                  | openssl x509 -noout -text \
           )
 
 # Let's try to build the  [ dn ] info
-DN=$(echo -e "${CERT_DATA}" \
-       | grep 'Subject:' \
-       | perl -pe 's/^\s+Subject:\s//' \
-       | perl -pe 's/\, ([A-Z]{1,2}=)/\n\1/g' \
+DN=$(
+      echo -e "${CERT_DATA}" \
+        | grep 'Subject:' \
+        | perl -pe 's/^\s+Subject:\s//' \
+        | perl -pe 's/\, ([A-Z]{1,2}=)/\n\1/g' \
    )
     
 # [ alt_names ] info
-ARRAY=( $(echo -e "${CERT_DATA}" \
-            | grep 'DNS:' \
-            | perl -pe 's/^\s+DNS://g' \
-            | perl -pe 's/, DNS:/\n/g' \
+ARRAY=( 
+         $(echo -e "${CERT_DATA}" \
+              | grep 'DNS:' \
+              | perl -pe 's/^\s+DNS://g' \
+              | perl -pe 's/, DNS:/\n/g' \
          )
-       )
+      )
 
 # File name standard (example.com -> example_com)
-FN="$(echo ${CN} | perl -pe 's/\./_/g')"
+FN=$(echo "${CN}" | perl -pe 's/\./_/g')
 
 # Parse the data for [ alt_names ]
 for ((i = 0; i < ${#ARRAY[@]}; ++i));
